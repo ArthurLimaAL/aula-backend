@@ -1,5 +1,5 @@
-import {useState, useEffect} from 'react'
-import './App.css'
+import { useState, useEffect } from 'react';
+import './App.css';
 
 function App() {
   const [questions, setQuestions] = useState([]);
@@ -10,79 +10,114 @@ function App() {
 
   const [usernameInput, setUsernameInput] = useState('');
   const [user, setUser] = useState(null);
+  const [ranking, setRanking] = useState([]);
 
-
-
+  // Carrega as perguntas iniciais
   useEffect(() => {
     fetch('/api/questions')
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Falha ao buscar perguntas.');
+        }
+
+        return response.json();
+      })
       .then((data) => {
         setQuestions(data);
         setLoading(false);
       })
-      .catch(error => {
-        console.error('Erro ao buscar perguntas:', error)
+      .catch((error) => {
+        console.error('Erro ao buscar perguntas:', error);
         setLoading(false);
-      })
-  },[])
+      });
+  }, []);
 
-  const handleLogin = (e) =>{
-    e.preventDefault();
-    if(!usernameInput.trim()) return;
-    
-    fetch('/api/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ username: usernameInput })
-    })
-    .then(res => res.json())
-    .then(userData => {
-      setUser(userData);
-    })
-    .catch(error => {
-      console.error('Erro ao identificar usuário:', error);
-    })
+  useEffect(() => {
+    if (!user) {
+      setRanking([]);
+      return;
+    }
+
+    carregarRanking();
+  }, [user]);
+
+  const carregarRanking = () => {
+    fetch('/api/ranking')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Falha ao buscar ranking: ${res.status}`);
+        }
+
+        return res.json();
+      })
+      .then((data) => setRanking(data))
+      .catch((err) => console.error('Erro ao buscar ranking:', err));
   };
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (!usernameInput.trim()) return;
 
-  function handleAnswerClick(selectedOption) {
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: usernameInput })
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Falha ao identificar usuário.');
+        }
+
+        return res.json();
+      })
+      .then((userData) => {
+        setUser(userData);
+      })
+      .catch((err) => console.error('Erro ao identificar usuário:', err));
+  };
+
+  const handleAnswerClick = (selectedOption) => {
     const currentQuestion = questions[currentQuestionIndex];
+    let finalScore = score;
+
     if (selectedOption === currentQuestion.answer) {
-      setScore(score + 1);
+      finalScore = score + 1;
+      setScore(finalScore);
     }
 
-    const nextQuestionIndex = currentQuestionIndex + 1;
-    if (nextQuestionIndex < questions.length) {
-      setCurrentQuestionIndex(nextQuestionIndex);
+    const nextQuestion = currentQuestionIndex + 1;
+    
+    if (nextQuestion < questions.length) {
+      setCurrentQuestionIndex(nextQuestion);
     } else {
       setQuizFinished(true);
+      enviarPontuacao(finalScore);
     }
-  }
+  };
+
+  const enviarPontuacao = (scoreFinal) => {
+    fetch('/api/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user.username, score: scoreFinal })
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Falha ao salvar pontuação.');
+        }
+
+        return res.json();
+      })
+      .then((data) => {
+        setUser(data.updatedUser);
+      })
+      .catch((err) => console.error('Erro ao salvar pontuação:', err));
+  };
 
   const resetQuiz = () => {
     setCurrentQuestionIndex(0);
     setScore(0);
     setQuizFinished(false);
-  }
-
-  const enviarPontuacao = (scoreFinal) => {
-   
-    fetch('/api/scores', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ userId: user.id, score: scoreFinal })
-    })
-    .then(response => response.json())
-    .then(data => {
-      setUser(data.updatedUser);
-    })
-    .catch(error => {
-      console.error('Erro ao salvar pontuação:', error);
-    });
   };
 
   const handleLogout = () => {
@@ -92,26 +127,27 @@ function App() {
   };
 
   if (loading) {
-    return <h3>Carregando perguntas...</h3>;
+    return <div className="quiz-container"><h3>Carregando perguntas...</h3></div>;
   }
 
-  if(questions.length === 0) {
-    return <h3>Nenhuma pergunta disponível.</h3>;
-  }
-
-  if(!user) {
+  if (!user) {
     return (
-      <div className="login-container"> 
-        <h2>Login</h2>
-        <form onSubmit={handleLogin}>
-          <input
-            type="text"
-            placeholder="Nome de usuário"
-            value={usernameInput}
-            onChange={(e) => setUsernameInput(e.target.value)}
-          />
-          <button type="submit">Entrar</button>
-        </form>
+      <div className="quiz-container">
+        <h1>App de Quiz 🧠</h1>
+        <div className="card">
+          <h2>Seja bem-vindo!</h2>
+          <p>Digite seu nome de usuário para começar a jogar e salvar seu progresso.</p>
+          <form onSubmit={handleLogin} className="login-form">
+            <input 
+              type="text" 
+              placeholder="Ex: alexandre"
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn-reset">Entrar e Jogar</button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -119,30 +155,81 @@ function App() {
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <div className="App">
-      <h1>Quiz App</h1>
-      {quizFinished ? (
-        <div>
-          <h2>Quiz Finalizado!</h2>
-          <p>Sua pontuação: {score} de {questions.length}</p>
-          <h3>Histórico de Pontuações de {user.scores && user.scores.length >0? (
-            user.scores.map((s, index) => (
-              <span key={index}> Tentativa {index + 1}: {s} acertos</span>
-            ))
-          ) : (
-            <span>Nenhuma pontuação registrada.</span>
-          )}:</h3>
+    <div className="quiz-container">
+      <div className="user-bar">
+        <span>Jogador: <strong>{user.username}</strong></span>
+        <button onClick={handleLogout} className="btn-logout">Sair</button>
+      </div>
 
-          <button onClick={resetQuiz}>Reiniciar Quiz</button>
+      {quizFinished ? (
+        <div className="card result-card">
+          <h2>🎉 Quiz Concluído!</h2>
+          <p>Você acertou <strong>{score}</strong> de <strong>{questions.length}</strong> perguntas nesta rodada.</p>
+          
+          <div className="history-section">
+            <h3>Seu Histórico Pessoal:</h3>
+            {user.scores && user.scores.length > 0 ? (
+              <div className="scores-badges">
+                {user.scores.map((s, index) => (
+                  <span key={index} className="score-badge">Jogo {index + 1}: {s} pts</span>
+                ))}
+              </div>
+            ) : (
+              <p>Nenhuma pontuação registrada.</p>
+            )}
+          </div>
+
+          {/* --- NOVO: TABELA DE RANKING GLOBAL --- */}
+          <div className="ranking-section">
+            <h3>🏆 Ranking Global (Melhores Pontuações)</h3>
+            <table className="ranking-table">
+              <thead>
+                <tr>
+                  <th>Posição</th>
+                  <th>Jogador</th>
+                  <th>Recorde</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranking.length > 0 ? (
+                  ranking.map((player, index) => (
+                    <tr key={index} className={player.username === user.username ? "current-player-row" : ""}>
+                      <td>{index + 1}º</td>
+                      <td>{player.username} {player.username === user.username && "(Você)"}</td>
+                      <td>{player.topScore} acertos</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3">Ranking indisponível no momento.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <button onClick={resetQuiz} className="btn-reset" style={{ marginTop: '25px' }}>Jogar Novamente</button>
         </div>
       ) : (
-        <div>
-          <h2>{currentQuestion.question}</h2>
-          {currentQuestion.options.map((option, index) => (
-            <button key={index} onClick={() => handleAnswerClick(option)}>
-              {option}
-            </button>
-          ))}
+        <div className="card">
+          <div className="quiz-header">
+            <span>Pergunta {currentQuestionIndex + 1} de {questions.length}</span>
+            <span>Pontuação Atual: {score}</span>
+          </div>
+          
+          <h2 className="question-text">{currentQuestion.question}</h2>
+          
+          <div className="options-container">
+            {currentQuestion.options.map((option, index) => (
+              <button 
+                key={index} 
+                onClick={() => handleAnswerClick(option)}
+                className="btn-option"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
