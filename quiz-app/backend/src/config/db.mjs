@@ -28,13 +28,16 @@ export default User;
 
 export const connectDB = async () => {
   try {
+    const dbName = process.env.MONGODB_DB_NAME || 'quiz-db';
+
     // Define um limite de tempo curto (5 segundos) para tentar conectar
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000 
+      serverSelectionTimeoutMS: 5000,
+      dbName
     });
     
     isDatabaseConnected = true;
-    console.log(`[DATABASE] MongoDB conectado com sucesso: ${conn.connection.host}`);
+    console.log(`[DATABASE] MongoDB conectado com sucesso: ${conn.connection.host}/${conn.connection.name}`);
   } catch (error) {
     isDatabaseConnected = false;
     console.error(`[AVISO DATABASE] Falha na conexão: ${error.message}`);
