@@ -1,7 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv'; // Importa o gerenciador de variáveis de ambiente
+import { connectDB } from './config/db.mjs'; // Importa nossa função de conexão
 import { questions } from './data/questions.mjs';
 import { users, findUser, createUser } from './data/users.mjs';
+
+// Carrega as configurações do arquivo .env para o process.env
+dotenv.config();
 
 const app = express();
 
@@ -9,10 +14,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Dispara a conexão com o MongoDB Atlas
+connectDB();
+
 // Rota Raiz
 app.get('/', (req, res) => {
-  res.json({ message: "Servidor do Quiz API está online e rodando!" });
+  res.json({ message: "Servidor do Quiz API está online e conectado ao banco!" });
 });
+
 
 // Rota GET - Listar Perguntas
 app.get('/api/questions', (req, res) => {
