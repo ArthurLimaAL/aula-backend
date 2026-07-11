@@ -202,6 +202,47 @@
   color: #166534;
 }
 
+.user-bar>div {
+  display: flex;
+  gap: 8px;
+}
+
+.percentage-badge {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1e40af;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.ranking-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.empty-history {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  color: #64748b;
+  text-align: center;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.history-header h2 {
+  margin: 0;
+}
+
 @media (max-width: 640px) {
   .quiz-container {
     padding: 18px 12px;
@@ -221,4 +262,35 @@
     padding: 10px 8px;
     font-size: 0.85rem;
   }
+
+  .user-bar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .user-bar>div {
+    width: 100%;
+  }
+
+  .user-bar .btn-reset,
+  .user-bar .btn-logout {
+    flex: 1;
+  }
+
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .history-header .btn-logout {
+    width: 100%;
+  }
+
+  .ranking-table th:nth-child(2),
+  .ranking-table td:nth-child(2) {
+    display: none;
+  }
+
 }

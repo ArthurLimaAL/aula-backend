@@ -1,6 +1,6 @@
 export let users = [
     {
-        username: 'alexandre',
+        username: 'Alexandre',
         scores: [3, 2]
     }
 ];
