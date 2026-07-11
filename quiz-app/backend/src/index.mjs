@@ -198,6 +198,48 @@ app.post('/api/scores', async (req, res) => {
   res.status(200).json({ message: "Pontuação salva!", updatedUser: user });
 });
 
+// backend/src/index.mjs
+app.post('/api/scores', async (req, res) => {
+  const { username, score, totalQuestions } = req.body;
+  if (!username || score === undefined || totalQuestions === undefined) {
+    return res.status(400).json({ error: "Dados insuficientes." });
+  }
+
+  const percentage = Math.round((Number(score) / Number(totalQuestions)) * 100);
+  const newAttempt = {
+    score: Number(score),
+    total: Number(totalQuestions),
+    percentage,
+    date: new Date()
+  };
+
+  if (isDatabaseConnected) {
+    try {
+      const updatedUser = await User.findOneAndUpdate(
+        { username: username.trim().toLowerCase() },
+        { 
+          $push: { history: newAttempt },
+          $push: { scores: Number(score) } // mantém compatibilidade
+        },
+        { new: true }
+      );
+      if (!updatedUser) return res.status(404).json({ error: "Usuário não encontrado." });
+      return res.status(200).json({ message: "Pontuação salva!", updatedUser });
+    } catch (error) {
+      console.error("[ERRO MONGO] Falha ao salvar pontuação:", error);
+      return res.status(500).json({ error: "Erro interno no servidor." });
+    }
+  }
+  
+  // Fallback memória - só para não crashar
+  const user = findUser(username);
+  if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+  user.scores.push(Number(score));
+  if (!user.history) user.history = [];
+  user.history.push(newAttempt);
+  res.status(200).json({ message: "Pontuação salva!", updatedUser: user });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`[BACKEND] Servidor rodando na porta ${PORT}`);

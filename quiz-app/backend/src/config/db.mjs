@@ -45,3 +45,31 @@ export const connectDB = async () => {
     // REMOVIDO: process.exit(1) para evitar o crash do nodemon
   }
 };
+
+// backend/src/config/db.mjs
+const attemptSchema = new mongoose.Schema({
+  score: { type: Number, required: true },
+  total: { type: Number, required: true },
+  percentage: { type: Number, required: true },
+  date: { type: Date, default: Date.now }
+}, { _id: false }); // _id: false para não criar id pra cada tentativa
+
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: [true, 'O nome de usuário é obrigatório.'],
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
+  history: {
+    type: [attemptSchema], // Novo campo
+    default: []
+  },
+  scores: { // Mantém para não quebrar código antigo
+    type: [Number],
+    default: []
+  }
+}, {
+  timestamps: true
+});
